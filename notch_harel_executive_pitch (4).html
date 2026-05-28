@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notch × Harel Insurance & Finance</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@200;300;400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0D1117;
+  --bg2:     #131922;
+  --card:    #1B2333;
+  --card2:   #222D40;
+  --border:  rgba(255,255,255,0.07);
+  --orange:  #FF561B;
+  --ora-lt:  #FF8B38;
+  --blue:    #5182FF;
+  --white:   #FFFFFF;
+  --dim:     #8A96A9;
+  --muted:   #4D5A6D;
+  --green:   #4ADE80;
+  --red:     #FF4C4C;
+  --gold:    #F0D652;
+}
+
+html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--white); font-family:'Inter',sans-serif; }
+
+/* ─── DECK ENGINE ─── */
+#deck { width:100vw; height:100vh; position:relative; overflow:hidden; }
+
+.slide {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  padding: 5.5vh 6.5vw 10.5vh;
+  opacity:0; pointer-events:none;
+  transition: opacity .5s cubic-bezier(.4,0,.2,1), transform .5s cubic-bezier(.4,0,.2,1);
+  transform: translateX(36px);
+}
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.prev   { opacity:0; transform:translateX(-36px); transition-duration:.4s; }
+
+/* ─── CHROME ─── */
+#progress { position:fixed; bottom:0; left:0; height:3px; background:var(--orange); transition:width .45s ease; z-index:300; border-radius:0 2px 2px 0; }
+#counter  { position:fixed; bottom:5vh; left:50%; transform:translateX(-50%); font-size:11px; color:var(--muted); letter-spacing:.12em; text-transform:uppercase; z-index:300; }
+
+/* ─── TYPE SCALE ─── */
+.hero { font-family:'Barlow',sans-serif; font-weight:900; font-size:clamp(48px,6.5vw,84px); line-height:1.02; letter-spacing:-.025em; }
+.h1   { font-family:'Barlow',sans-serif; font-weight:700; font-size:clamp(34px,4.2vw,54px); line-height:1.1;  letter-spacing:-.02em; }
+.h2   { font-family:'Barlow',sans-serif; font-weight:600; font-size:clamp(24px,2.8vw,36px); line-height:1.2; }
+.h3   { font-family:'Barlow',sans-serif; font-weight:600; font-size:clamp(18px,2vw,26px);   line-height:1.3; }
+.body { font-size:clamp(15px,1.4vw,19px); line-height:1.6; }
+.sm   { font-size:clamp(12px,1.1vw,15px); line-height:1.55; color:var(--dim); }
+.cap  { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:500; }
+.stat { font-family:'Barlow',sans-serif; font-weight:900; font-size:clamp(72px,10vw,130px); line-height:1; letter-spacing:-.04em; }
+
+.t-ora   { color:var(--orange); }
+.t-blue  { color:var(--blue); }
+.t-green { color:var(--green); }
+.t-dim   { color:var(--dim); }
+.t-white { color:var(--white); }
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp  { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+@keyframes shimmer { from { background-position:200% center; } to { background-position:-200% center; } }
+@keyframes spin    { to { --angle:360deg; } }
+@keyframes beam    { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes glow    { 0%,100%{box-shadow:0 0 24px rgba(255,86,27,.15)} 50%{box-shadow:0 0 56px rgba(255,86,27,.45), 0 0 100px rgba(255,86,27,.1)} }
+@keyframes lineGrow{ from{width:0} to{width:56px} }
+@keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+
+/* staggered fade-up */
+.fu { opacity:0; }
+.slide.active .fu { animation: fadeUp .5s ease forwards; }
+.fu.d1{animation-delay:.07s} .fu.d2{animation-delay:.18s} .fu.d3{animation-delay:.29s}
+.fu.d4{animation-delay:.40s} .fu.d5{animation-delay:.51s} .fu.d6{animation-delay:.62s}
+.fu.d7{animation-delay:.73s}
+
+.shimmer {
+  background:linear-gradient(110deg,var(--orange) 10%,var(--ora-lt) 35%,#fff 50%,var(--ora-lt) 65%,var(--orange) 90%);
+  background-size:200% auto;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  animation:shimmer 2.8s linear infinite;
+}
+.beam-line {
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--orange),transparent);
+  background-size:200% 100%;
+  animation:beam 2.2s linear infinite;
+}
+
+/* ─── GLOW BORDER CARD ─── */
+.glow-card { position:relative; border-radius:16px; isolation:isolate; animation:glow 3s ease-in-out infinite; height: 100%;}
+.glow-card::before {
+  content:''; position:absolute; inset:-2px; border-radius:18px; z-index:-1;
+  background:conic-gradient(from var(--angle), var(--orange), var(--blue), var(--ora-lt), var(--orange));
+  animation:spin 4.5s linear infinite;
+}
+.glow-card-inner { background:var(--card); border-radius:14px; padding:28px; height: 100%; }
+
+/* ─── CTA BUTTON ─── */
+.cta-btn {
+  position:relative; display:inline-flex; align-items:center; justify-content:center;
+  padding:17px 44px; border-radius:12px; isolation:isolate; border:none; cursor:pointer;
+  font-family:'Barlow',sans-serif; font-weight:700; font-size:20px; color:var(--white);
+  background:var(--card); text-decoration:none;
+}
+.cta-btn::before {
+  content:''; position:absolute; inset:-2px; border-radius:14px; z-index:-1;
+  background:conic-gradient(from var(--angle), var(--orange), var(--blue), var(--ora-lt), var(--orange));
+  animation:spin 3s linear infinite;
+}
+
+/* ─── COMPONENTS ─── */
+.card    { background:var(--card);  border-radius:14px; padding:26px; border:1px solid var(--border); }
+.card-sm { background:var(--card);  border-radius:12px; padding:18px; border:1px solid var(--border); }
+
+.badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 13px; border-radius:999px; font-size:11px; font-weight:700;
+  letter-spacing:.08em; text-transform:uppercase; width: fit-content;
+}
+.b-ora  { background:rgba(255,86,27,.12);  color:var(--orange); border:1px solid rgba(255,86,27,.3); }
+.b-blue { background:rgba(81,130,255,.12); color:var(--blue);   border:1px solid rgba(81,130,255,.3); }
+.b-grn  { background:rgba(74,222,128,.12); color:var(--green);  border:1px solid rgba(74,222,128,.3); }
+
+.sep { height:3px; background:var(--orange); border-radius:2px; margin:12px 0; width:0; }
+.slide.active .sep { animation:lineGrow .5s ease .25s forwards; }
+
+.exec-step {
+  display:flex; align-items:flex-start; gap:16px;
+  padding:16px 20px; background:var(--card); border-radius:12px;
+  border:1px solid var(--border); border-left:3px solid var(--orange);
+}
+
+/* grids */
+.g2 { display:grid; grid-template-columns:1fr 1fr;       gap:20px; }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr;   gap:16px; }
+.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.g3-wide { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:16px; }
+
+/* comparison */
+.comp-head, .comp-row {
+  display:grid; grid-template-columns:1.2fr 1fr 1fr;
+  padding:12px 0; border-bottom:1px solid var(--border);
+}
+.comp-head { padding:6px 0; }
+.comp-row:last-child { border-bottom:none; }
+.comp-row.hl { background:rgba(255,86,27,.04); border-radius:6px; padding:12px 8px; }
+.cl  { color:var(--dim);   font-size:14px; }
+.cn  { color:var(--white); font-size:14px; font-weight:500; }
+.co  { color:var(--muted); font-size:14px; }
+
+/* spacers */
+.mt8{margin-top:8px} .mt12{margin-top:12px} .mt16{margin-top:16px}
+.mt24{margin-top:24px} .mt32{margin-top:32px} .mt48{margin-top:48px}
+
+/* flex */
+.flex{display:flex} .col{flex-direction:column} .ac{align-items:center}
+.grow{flex:1}
+
+/* hero bg */
+.hero-bg { background:#090D14; }
+canvas.bg { position:absolute; inset:0; z-index:0; pointer-events:none; }
+.z1 { position:relative; z-index:1; }
+
+::-webkit-scrollbar { display:none; }
+</style>
+</head>
+<body>
+<div id="deck">
+
+<div id="progress"></div>
+<div id="counter">1 / 11</div>
+
+<!-- ═══════════════════════════════════
+     01 · HERO
+═══════════════════════════════════ -->
+<!-- SPEAKER NOTE: "Eyal, thank you for making the time. We know Harel is exploring AI deeply. But today isn't about conversational chatbots. Today is about how we safely connect AI to your AS/400 to execute core operations when there is absolutely zero margin for error." -->
+<div class="slide hero-bg active" id="s1">
+  <canvas class="bg" id="cv1"></canvas>
+  <div class="z1 flex col" style="height:100%">
+    <div class="grow"></div>
+    <span class="badge b-ora fu d1">Notch × Harel Insurance · Strategic Briefing</span>
+    <div class="hero mt24 fu d2">
+      Executing Operations With<br><span class="shimmer">Zero Margin For Error.</span>
+    </div>
+    <div class="sep fu d3"></div>
+    <div class="h2 t-dim mt16 fu d4" style="font-weight:300; max-width:680px">
+      A conversation about securely unlocking<br>core-system AI execution.
+    </div>
+    <div style="flex:2"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     02 · WHO IS NOTCH (The DNA)
+═══════════════════════════════════ -->
+<!-- SPEAKER NOTE: "Before we talk about your architecture, you need to know who is sitting across from you. We didn't build a generic AI and pivot to finance. As covered in Calcalist, Notch started as an insurance company. We know exactly what your risk committee needs to see to approve an AI integration, because we used to be the ones submitting to it." -->
+<div class="slide" id="s2">
+  <div class="cap fu d1">The Notch DNA</div>
+  <div class="h1 mt16 fu d2">We aren't a generic AI vendor.<br>We are <span class="t-ora">native to Insurance.</span></div>
+  <div class="sep fu d3"></div>
+  <div class="g2 mt24">
+    <div class="flex col" style="gap:12px">
+      <div class="exec-step fu d3">
+        <span style="font-size:18px;color:var(--green)"><i class="fa-solid fa-building-shield"></i></span>
+        <div>
+          <div class="h3">Born as an Insurtech</div>
+          <div class="sm mt6">Notch began its life as an insurance company. We inherently understand actuarial risk, policy administration, and loss ratios.</div>
+        </div>
+      </div>
+      <div class="exec-step fu d4">
+        <span style="font-size:18px;color:var(--green)"><i class="fa-solid fa-rocket"></i></span>
+        <div>
+          <div class="h3">Enterprise Scale & Backing</div>
+          <div class="sm mt6">$45M raised. 12x ARR growth. Founded by Rafael Broshi, Elool Jacoby, and Yuval Peled. Built to handle enterprise transaction volume.</div>
+        </div>
+      </div>
+      <div class="exec-step fu d5">
+        <span style="font-size:18px;color:var(--green)"><i class="fa-solid fa-scale-balanced"></i></span>
+        <div>
+          <div class="h3">Regulatory Mastery (BOI / CMISA)</div>
+          <div class="sm mt6">We didn't need to learn CMISA circulars—we built our entire platform architecture to define their technical bounds natively in Hebrew.</div>
+        </div>
+      </div>
+    </div>
+    <div class="fu d4">
+      <div class="glow-card">
+        <div class="glow-card-inner">
+          <span class="badge b-grn" style="margin-bottom:14px">The Unfair Advantage</span>
+          <div class="h3">We know the core.</div>
+          <div class="body t-dim mt16">Other AI providers are learning the difference between a deductible and a premium exclusion while trying to integrate with your AS/400.</div>
+          <div class="body t-dim mt16">Because our roots are in insurance, we built Notch to satisfy the exact requirements of an Insurance Model-Risk Committee from day one. <strong class="t-white">We speak your language.</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     03 · THE DIVIDE (Addressing the Wonderful.ai elephant)
+═══════════════════════════════════ -->
+<!-- SPEAKER NOTE: "We know you've tested Wonderful.ai and Azure OpenAI. They are fantastic for CX and summaries. We are not here to replace them. But you can't let a probabilistic LLM adjudicate a claim. [DISCOVERY QUESTION]: When you look at your claims pipeline today, where is the specific bottleneck where human review is legally mandatory, even if the math is obvious?" -->
+<div class="slide" id="s3">
+  <div class="cap fu d1">The Probabilistic vs. Deterministic Divide</div>
+  <div class="h1 mt16 fu d2">Conversational CX vs.<br><span class="t-ora">High-Stakes Reality.</span></div>
+  <div class="sep fu d3"></div>
+  <div class="g2 mt24">
+    <div class="card fu d4">
+      <div class="badge b-blue" style="margin-bottom:12px">The CX Layer (Wonderful / Azure OpenAI)</div>
+      <div class="h3">Probabilistic &amp; Conversational</div>
+      <div class="body t-dim mt16">You've successfully tested LLMs to generate summaries, analyze sentiment, and answer FAQs. They guess at intent perfectly for customer service.</div>
+      <div class="body t-dim mt16">But they cannot bind a policy, approve a claim, or touch the AS/400. Their margin of error is greater than zero, requiring manual human hand-offs to avoid regulatory liability.</div>
+    </div>
+    <div class="fu d5">
+      <div class="glow-card">
+        <div class="glow-card-inner">
+          <span class="badge b-ora" style="margin-bottom:14px">The Core Execution Layer (Notch)</span>
+          <div class="h3">Deterministic &amp; Governed</div>
+          <div class="body t-dim mt16">Insurance operations—claims, medical underwriting, CAL block execution—require absolute certainty and zero hallucinations.</div>
+          <div class="body t-dim mt16"><strong class="t-white">Notch is a mathematically deterministic semantic engine. It does not guess. It translates unstructured AI inputs into strict CMISA-compliant actions. Zero margin for error.</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     04 · THE ROI OPPORTUNITY (Insurance specific)
+═══════════════════════════════════ -->
+<!-- SPEAKER NOTE: "We aren't here to improve CSAT surveys by a decimal point. We are here to drive hard operational efficiency across the P&L." -->
+<div class="slide" id="s4">
+  <div class="flex col" style="height:100%; justify-content:center">
+    <div class="cap fu d1">Enterprise Value Creation</div>
+    <div class="flex ac mt16" style="gap:6px; line-height:1">
+      <div class="stat t-ora fu d2" id="ct40">0</div>
+      <div class="h1 t-ora fu d3" style="align-self:flex-end;margin-bottom:14px">%</div>
+    </div>
+    <div class="h1 fu d3" style="font-weight:300">Reduction in <strong>Cost-per-Claim.</strong></div>
+    <div class="beam-line mt24 fu d4" style="max-width:440px"></div>
+    <div class="g3 mt24">
+      <div class="card-sm fu d5">
+        <div class="h2 t-ora">&lt; 6 mo</div>
+        <div class="body t-dim mt8">Payback period</div>
+        <div class="sm mt8">From go-live to break-even on core agent deployment.</div>
+      </div>
+      <div class="card-sm fu d6">
+        <div class="h2 t-ora">40–60%</div>
+        <div class="body t-dim mt8">Tier 1 Deflection</div>
+        <div class="sm mt8">Complete, end-to-end resolution of inbound queries.</div>
+      </div>
+      <div class="card-sm fu d7">
+        <div class="h2 t-ora">STP</div>
+        <div class="body t-dim mt8">Straight-Through Processing</div>
+        <div class="sm mt8">Auto-adjudicating FNOL and policy updates instantly without human touch.</div>
+      </div>
+    </div>
+    <div class="sm mt24 fu d7" style="color:var(--muted)">
+      "Deterministic AI execution is shifting high-volume insurance operations from cost-centers to profit drivers."
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     05 · TECHNICAL ARCHITECTURE (Multyx integration)
+═══════════════════════════════════ -->
+<!-- SPEAKER NOTE: "You’ve built an incredibly secure enclave with Multyx and H100s. But security is different from logic governance. We don't add latency; we are a deterministic inline semantic engine. [DISCOVERY QUESTION]: Eyal, if a model running in that enclave hallucinates a coverage term right now, how are you catching that before it hits the AS/400?" -->
+<div class="slide" id="s5">
+  <div class="cap fu d1">Technical Architecture</div>
+  <div class="h1 mt16 fu d2">Securing the<br><span class="t-ora">Execution Layer.</span></div>
+  <div class="sep fu d3"></div>
+  <div class="g2 mt24" style="align-items: center;">
+    <div class="flex col" style="gap:16px">
+      <div class="fu d4">
+        <div class="h3">The Multyx SaaS Enclave</div>
+        <div class="body t-dim mt8">You've established incredible infrastructure, training AI on sensitive data inside Azure Confidential VMs using H100s. The data isolation is world-class.</div>
+      </div>
+      <div class="fu d5">
+        <div class="h3">The Ledger Vulnerability</div>
+        <div class="body t-dim mt8">However, executing actions via those models still carries non-delegable compliance risks. A probabilistic model cannot directly map parameters to a legacy ledger.</div>
+      </div>
+      <div class="fu d6">
+        <div class="h3 t-ora">Deterministic Semantic Engine</div>
+        <div class="body t-dim mt8">Notch provides inline policy validation. We take the unstructured output of the LLM, verify it deterministically against Harel's strict business logic, and execute the API call instantly.</div>
+      </div>
+    </div>
+    <div class="fu d7" style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding: 28px; text-align: center; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.4);">
+      <i class="fa-solid fa-database t-dim" style="font-size: 32px; margin-bottom: 12px;"></i>
+      <div class="h3">Harel Legacy AS/400</div>
+      <div class="beam-line" style="margin: 12px auto; width: 80px;"></div>
+      <i class="fa-solid fa-check-double t-ora" style="font-size: 32px; margin-bottom: 12px;"></i>
+      <div class="h3 t-ora">Inline Policy Validation</div>
+      <div class="beam-line" style="margin: 12px auto; width: 80px;"></div>
+      <i class="fa-solid fa-microchip t-blue" style="font-size: 32px; margin-bottom: 12px;"></i>
+      <div class="h3 t-white">Azure/Multyx LLM</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     06 · THE 90-DAY PATH
+═══════════════════════════════════ -->
+<!-- SPEAKER NOTE: "We know your IT team is underwater with the CAL integration. A POC shouldn't drain your best engineers. We need API docs for one workflow and 3 hours with a policy SME. That's it. We map our pre-built semantic models to your endpoints." -->
+<div class="slide" id="s6">
+  <div class="flex col" style="height:100%; justify-content:center">
+    <div class="cap fu d1">A Zero-Disruption Path to Proof</div>
+    <div class="h1 mt12 fu d2">One high-stakes workflow.<br><span class="t-ora">90 days. Absolute proof.</span></div>
+    <div class="sep fu d3"></div>
+    <div class="g3 mt16">
+      <div class="card poc fu d3">
+        <div class="cap t-ora mt8">Weeks 1–2</div>
+        <div class="h3 mt12">Semantic Mapping</div>
+        <div class="sm t-dim mt8">We map our pre-built semantic models to your specific AS/400 endpoints. Zero changes to your core architecture.</div>
+      </div>
+      <div class="card poc fu d4">
+        <div class="cap t-ora mt8">Weeks 3–8</div>
+        <div class="h3 mt12">Live Shadow Testing</div>
+        <div class="sm t-dim mt8">Agent deployed alongside real workflows. Full deterministic audit trails generated on every transaction to validate CMISA compliance.</div>
+      </div>
+      <div class="card poc fu d5">
+        <div class="cap t-ora mt8">Weeks 9–12</div>
+        <div class="h3 mt12">Measure STP</div>
+        <div class="sm t-dim mt8">Straight-Through Processing (STP) rate vs. baseline. Operational savings verified. Business case built.</div>
+      </div>
+    </div>
+    <div class="g2 mt12">
+      <div class="card-sm fu d6" style="background:rgba(255,86,27,.04); border-color:rgba(255,86,27,.2)">
+        <div class="sm"><strong>The Prize vs. Distraction:</strong> <span class="t-dim">We know IT is focused on ICC-CAL. This requires zero core disruption. We just need API docs and 3 hours with a policy SME.</span></div>
+      </div>
+      <div class="card-sm fu d7">
+        <div class="sm"><strong>Risk-Free Validation:</strong> <span class="t-dim">Defined scope. Fixed timeline. If the straight-through processing rates don't justify the model-risk sign-off, you've learned exactly what to expect.</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     07 · CTA
+═══════════════════════════════════ -->
+<div class="slide hero-bg" id="s7">
+  <canvas class="bg" id="cv7"></canvas>
+  <div class="z1 flex col" style="height:100%">
+    <div class="grow"></div>
+    <div class="cap fu d1">Let's build this together</div>
+    <div class="hero mt16 fu d2">
+      One conversation.<br><span class="shimmer">One team.</span>
+    </div>
+    <div class="sep fu d3"></div>
+    <div class="h2 t-dim mt24 fu d4" style="font-weight:300; max-width:600px">
+      A technical deep-dive — your CTO, CISO,<br>and the Notch compliance team.<br>
+      <strong class="t-white">This week.</strong>
+    </div>
+    <div class="mt48 fu d5">
+      <a href="#" class="cta-btn">Architect the Future with Notch</a>
+    </div>
+    <div style="flex:2"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     08 · APPENDIX DIVIDER
+═══════════════════════════════════ -->
+<div class="slide hero-bg" id="s8">
+  <div class="z1 flex col ac" style="height:100%; justify-content:center">
+    <div class="h1 t-dim fu d1" style="font-weight:300; letter-spacing:0.1em;">APPENDIX</div>
+    <div class="beam-line mt24 fu d2" style="width:120px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     09 · APPENDIX: HAREL'S SCALE
+═══════════════════════════════════ -->
+<div class="slide" id="s9">
+  <div class="flex col" style="height:100%; justify-content:center">
+    <div class="cap fu d1">Q1 2026 Momentum & The ICC-CAL Acquisition</div>
+    <div class="flex ac mt16" style="gap:6px; line-height:1">
+      <div class="stat t-ora fu d2" id="ct630">0</div>
+      <div class="h1 t-ora fu d3" style="align-self:flex-end;margin-bottom:14px">B</div>
+    </div>
+    <div class="h1 fu d3" style="font-weight:300; max-width:660px">
+      NIS Assets Under Management.
+    </div>
+    <div class="beam-line mt24 fu d4" style="max-width:380px"></div>
+    <div class="body t-dim mt24 fu d4" style="max-width:700px">
+      With Harel's record ROE (18.5%) in Q1 2026 and the impending integration of ICC-CAL, the operational margin for error is shrinking. Moving high-stakes processes to digital requires absolute precision.
+    </div>
+    <div class="g3 mt32">
+      <div class="card-sm fu d5">
+        <div class="h3 t-white">The Innovation Mandate</div>
+        <div class="sm mt8">Harel is actively exploring Azure OpenAI to generate summaries and handle massive service scale.</div>
+      </div>
+      <div class="card-sm fu d6">
+        <div class="h3 t-white">The Regulatory Microscope</div>
+        <div class="sm mt8">The ICC-CAL integration places Harel under intense Competition Authority & BOI 362 scrutiny.</div>
+      </div>
+      <div class="card-sm fu d7" style="border-color:rgba(255,86,27,.3)">
+        <div class="h3 t-ora">The Execution Gap</div>
+        <div class="sm mt8">Current conversational POCs can summarize policies nicely, but they cannot legally execute claims.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     10 · APPENDIX: THE COMPETITIVE LANDSCAPE
+═══════════════════════════════════ -->
+<div class="slide" id="s10">
+  <div class="cap fu d1">The Competitive Reality</div>
+  <div class="h1 mt16 fu d2">The market is moving to<br><span class="t-ora">execution.</span> Fast.</div>
+  <div class="sep fu d3"></div>
+  <div class="g4 mt24">
+    <div class="card fu d3">
+      <div class="cap" style="color:var(--muted)">Migdal Insurance</div>
+      <div class="h2 t-ora mt12">70%</div>
+      <div class="body t-dim mt8">Claims Automation</div>
+      <div class="sm mt16">Reportedly processing the majority of standard health and auto claims using AI and RPA.</div>
+    </div>
+    <div class="card fu d4">
+      <div class="cap" style="color:var(--muted)">Clal Insurance</div>
+      <div class="h2 t-ora mt12">$55M</div>
+      <div class="body t-dim mt8">Direct AI Investment</div>
+      <div class="sm mt16">Strategic equity investment directly into Anthropic (Claude AI) using Nostro funds.</div>
+    </div>
+    <div class="card fu d5">
+      <div class="cap" style="color:var(--muted)">Menora Mivtachim</div>
+      <div class="h2 t-ora mt12">NLP</div>
+      <div class="body t-dim mt8">Fraud Detection</div>
+      <div class="sm mt16">Deploying natural language processing and graph theory to map complex, high-risk claims.</div>
+    </div>
+    <div class="card fu d6" style="background:rgba(255,86,27,.04); border-color:rgba(255,86,27,.2)">
+      <div class="cap t-ora">Harel Insurance</div>
+      <div class="h2 t-white mt12">Now</div>
+      <div class="body t-dim mt8">The Mandate to Lead</div>
+      <div class="sm mt16">Transitioning from exploratory Azure OpenAI chatbots to secure, core-system execution.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     11 · APPENDIX: NOTCH IN PRODUCTION (Comparison)
+═══════════════════════════════════ -->
+<div class="slide" id="s11">
+  <div class="cap fu d1">Notch In Production</div>
+  <div class="h1 mt16 fu d2">CX Chatbots answer.<br><span class="t-ora">Notch Agents execute.</span></div>
+  <div class="sep fu d3"></div>
+  <div class="mt24 fu d3">
+    <div class="comp-head" style="border-top:1px solid var(--border)">
+      <div class="cap"></div>
+      <div class="cap t-ora">Notch — Core Execution Layer</div>
+      <div class="cap" style="color:var(--muted)">General CX Platforms (Wonderful, Insait)</div>
+    </div>
+    <div class="comp-row fu d4">
+      <div class="cl">System interaction</div>
+      <div class="cn">Write-access: Live Policy bind &amp; Claims</div>
+      <div class="co">Read-only: Information extraction & hand-off</div>
+    </div>
+    <div class="comp-row hl fu d5">
+      <div class="cl"><strong class="t-white">BOI 369 & CMISA Compliance</strong></div>
+      <div class="cn"><span class="t-green">✓</span> Individual Explainability generated instantly</div>
+      <div class="co">Probabilistic logic, fails individual audit</div>
+    </div>
+    <div class="comp-row fu d6">
+      <div class="cl">Model-Risk validation</div>
+      <div class="cn">Deterministic logic path approved easily</div>
+      <div class="co">Black-box validation requires massive overhead</div>
+    </div>
+    <div class="comp-row fu d7">
+      <div class="cl">Industry DNA</div>
+      <div class="cn">Founded as an Insurtech company</div>
+      <div class="co">Cross-vertical generalists</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<script>
+// ─── SLIDE ENGINE ───
+const slides = [...document.querySelectorAll('.slide')];
+const total  = slides.length;
+let   cur    = 0;
+
+function goTo(n) {
+  if (n < 0 || n >= total || n === cur) return;
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('prev');
+  setTimeout(() => slides[cur].classList.remove('prev'), 500);
+  cur = n;
+  const s = slides[cur];
+  s.classList.add('active');
+  s.querySelectorAll('.fu').forEach(el => { el.style.animation='none'; void el.offsetHeight; el.style.animation=''; });
+  updateChrome(); onEnter(cur);
+}
+
+function updateChrome() {
+  document.getElementById('progress').style.width = ((cur+1)/total*100)+'%';
+  document.getElementById('counter').textContent  = (cur+1)+' / '+total;
+}
+
+document.addEventListener('keydown', e => {
+  if (['ArrowRight','ArrowDown',' '].includes(e.key)) { e.preventDefault(); goTo(cur+1); }
+  if (['ArrowLeft','ArrowUp','Backspace'].includes(e.key)) { e.preventDefault(); goTo(cur-1); }
+});
+let tx=0;
+document.addEventListener('touchstart', e=>{tx=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',   e=>{
+  const d=tx-e.changedTouches[0].clientX;
+  if(Math.abs(d)>48) goTo(d>0?cur+1:cur-1);
+},{passive:true});
+
+// ─── PARTICLES ───
+function particles(id) {
+  const cv=document.getElementById(id); if(!cv||cv._on) return; cv._on=true;
+  const ctx=cv.getContext('2d');
+  const resize=()=>{cv.width=innerWidth; cv.height=innerHeight;};
+  resize(); addEventListener('resize',resize);
+  const N=50, pts=Array.from({length:N},()=>({
+    x:Math.random()*cv.width, y:Math.random()*cv.height,
+    vx:(Math.random()-.5)*.32, vy:(Math.random()-.5)*.32,
+    r:Math.random()*1.3+.4, a:Math.random()*.3+.1
+  }));
+  (function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(let i=0;i<N;i++) for(let j=i+1;j<N;j++){
+      const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+      if(d<115){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);
+        ctx.strokeStyle=`rgba(81,130,255,${.07*(1-d/115)})`;ctx.lineWidth=.55;ctx.stroke();}
+    }
+    pts.forEach(p=>{
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,86,27,${p.a})`;ctx.fill();
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>cv.width) p.vx*=-1;
+      if(p.y<0||p.y>cv.height) p.vy*=-1;
+    });
+    requestAnimationFrame(draw);
+  })();
+}
+
+// ─── COUNT UP ───
+function countUp(el,target,ms){
+  if(!el)return; const t0=performance.now();
+  (function tick(now){
+    const p=Math.min((now-t0)/ms,1), e=1-Math.pow(1-p,3);
+    el.textContent=Math.floor(e*target);
+    if(p<1) requestAnimationFrame(tick);
+    else {el.textContent=target; el.style.animation='none'; el.style.opacity='1';}
+  })(t0);
+}
+
+// ─── PER-SLIDE HOOKS ───
+function onEnter(i) {
+  if(i===0) particles('cv1');
+  if(i===6) particles('cv7'); // Trigger CTA particles
+  if(i===3) setTimeout(()=>countUp(document.getElementById('ct40'), 40, 1400),300); // Trigger ROI stat
+  if(i===8) setTimeout(()=>countUp(document.getElementById('ct630'), 630, 1100),300); // Trigger Scale stat
+}
+
+// ─── INIT ───
+updateChrome(); particles('cv1');
+</script>
+</body>
+</html>
